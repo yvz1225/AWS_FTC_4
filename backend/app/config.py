@@ -9,4 +9,10 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY", "")
 NOTION_PARENT_PAGE_ID = os.getenv("NOTION_PARENT_PAGE_ID", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL", "")
+SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "")
+
+# DynamoDB 테이블명
+ACTIVITY_LOGS_TABLE = os.getenv("ACTIVITY_LOGS_TABLE", "activity_logs")
+AVAILABILITY_TABLE = os.getenv("AVAILABILITY_TABLE", "availability")
+CONVERSATIONS_TABLE = os.getenv("CONVERSATIONS_TABLE", "conversations")
+PROJECTS_TABLE = os.getenv("PROJECTS_TABLE", "projects")

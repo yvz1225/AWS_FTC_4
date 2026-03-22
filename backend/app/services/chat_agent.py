@@ -1,167 +1,154 @@
-"""Chat_Agent 서비스 - Gemini API 연동 및 대화 관리 (인메모리 저장소)"""
+"""Chat_Agent: Gemini 기반 채팅형 명세 생성"""
 import json
-import re
 import uuid
 import logging
-from datetime import datetime, timezone
+import boto3
+from datetime import datetime, timezone, timedelta
 
-import google.generativeai as genai
+from google import genai
 
-from app.config import GEMINI_API_KEY
+from app.config import (
+    GEMINI_API_KEY, AWS_REGION, CONVERSATIONS_TABLE,
+)
 
 logger = logging.getLogger(__name__)
+KST = timezone(timedelta(hours=9))
 
-# Gemini 설정
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+SYSTEM_PROMPT = """당신은 팀 프로젝트 명세를 도와주는 AI 어시스턴트입니다.
+사용자와 대화하면서 다음 정보를 수집하세요:
 
-# 인메모리 대화 저장소 (DynamoDB 연결 전 임시)
-_conversations: dict[str, dict] = {}
+1. 프로젝트명
+2. 팀원 정보 (이름, 역할, GitHub ID, 이메일)
+3. 저장소(repo) URL
+4. 전체 마감일
+5. 작업 범위 (task 목록, 각 task의 담당자, 마감일, 카테고리)
 
-SYSTEM_PROMPT = """너는 팀 프로젝트 협업 보조 AI야. 팀장이 프로젝트 정보를 입력하면 체계적으로 정리해서 Project_Spec을 만들어줘.
-
-수집해야 할 정보:
-- 프로젝트명
-- 팀원 이름, 역할, GitHub ID, 이메일
-- 저장소(repo) 주소
-- 마감일
-- 필요한 작업(task) 범위
-
-대화 규칙:
-1. 친절하고 자연스럽게 대화하면서 정보를 수집해.
-2. 누락된 정보가 있으면 구체적으로 어떤 정보가 필요한지 물어봐.
-3. 충분한 정보가 모이면 Project_Spec 초안을 JSON으로 생성해.
-4. JSON을 생성할 때는 반드시 ```json 코드블록 안에 넣어줘.
-5. 사용자가 수정을 요청하면 반영해서 다시 JSON을 생성해.
-
-Project_Spec JSON 형식:
+모든 정보가 수집되면 아래 JSON 형식으로 Project_Spec 초안을 생성하세요:
 ```json
 {
-  "project_info": {
-    "name": "프로젝트명",
-    "repo_url": "https://github.com/...",
-    "deadline": "YYYY-MM-DD"
-  },
-  "members": [
-    {"name": "이름", "role": "역할", "github_id": "깃허브ID", "email": "이메일"}
-  ],
-  "tasks": [
-    {"name": "태스크명", "assignee": "담당자이름", "deadline": "YYYY-MM-DD", "category": "카테고리"}
-  ]
+  "project_info": {"name": "", "repo_url": "", "deadline": "YYYY-MM-DD"},
+  "members": [{"name": "", "role": "", "github_id": "", "email": ""}],
+  "tasks": [{"name": "", "assignee": "", "deadline": "YYYY-MM-DD", "category": ""}]
 }
 ```
-"""
+
+누락된 항목이 있으면 친절하게 추가 정보를 요청하세요.
+사용자가 수정을 요청하면 반영하세요.
+한국어로 대화하세요."""
 
 
-def _get_conversation(conversation_id: str) -> dict | None:
-    """인메모리 저장소에서 대화 세션 조회"""
-    return _conversations.get(conversation_id)
+def get_conversations_table():
+    dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
+    return dynamodb.Table(CONVERSATIONS_TABLE)
 
 
-def _save_conversation(conversation: dict):
-    """인메모리 저장소에 대화 세션 저장"""
-    _conversations[conversation["conversation_id"]] = conversation
-
-
-def _extract_spec_draft(text: str) -> dict | None:
-    """Gemini 응답에서 JSON 코드블록을 추출하여 Project_Spec 초안 반환"""
-    pattern = r"```json\s*([\s\S]*?)\s*```"
-    match = re.search(pattern, text)
-    if not match:
-        return None
+def get_conversation(conversation_id: str) -> dict | None:
+    """DynamoDB에서 대화 이력 조회"""
+    table = get_conversations_table()
     try:
-        return json.loads(match.group(1))
-    except json.JSONDecodeError:
-        logger.warning("JSON 파싱 실패, spec_draft를 None으로 반환")
+        resp = table.get_item(Key={"conversation_id": conversation_id})
+        return resp.get("Item")
+    except Exception as e:
+        logger.error(f"대화 조회 실패: {e}")
         return None
 
 
-def _build_gemini_history(history: list[dict]) -> list[dict]:
-    """히스토리를 Gemini API 형식으로 변환"""
-    gemini_history = []
-    for msg in history:
-        gemini_history.append({
-            "role": msg["role"],
-            "parts": [msg["content"]]
-        })
-    return gemini_history
+def save_conversation(conversation_id: str, history: list, spec_draft: dict | None, status: str = "active"):
+    """대화 이력 DynamoDB에 저장"""
+    table = get_conversations_table()
+    table.put_item(
+        Item={
+            "conversation_id": conversation_id,
+            "history": history,
+            "spec_draft": spec_draft or {},
+            "status": status,
+            "updated_at": datetime.now(KST).isoformat(),
+        }
+    )
+
+
+def extract_spec_from_response(text: str) -> dict | None:
+    """Gemini 응답에서 JSON Project_Spec 추출"""
+    try:
+        # ```json ... ``` 블록 찾기
+        if "```json" in text:
+            start = text.index("```json") + 7
+            end = text.index("```", start)
+            json_str = text[start:end].strip()
+            return json.loads(json_str)
+        # { 로 시작하는 JSON 찾기
+        elif "{" in text:
+            start = text.index("{")
+            # 마지막 } 찾기
+            depth = 0
+            for i in range(start, len(text)):
+                if text[i] == "{":
+                    depth += 1
+                elif text[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        json_str = text[start:i + 1]
+                        return json.loads(json_str)
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return None
 
 
 def chat(conversation_id: str | None, message: str) -> dict:
-    """채팅 메시지 처리 및 Gemini 응답 생성"""
-
-    # 새 대화 or 기존 대화
+    """채팅 메시지 처리"""
+    # 새 대화 시작
     if not conversation_id:
         conversation_id = str(uuid.uuid4())
-        conversation = {
-            "conversation_id": conversation_id,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "history": [],
-            "spec_draft": None,
-            "status": "in_progress",
-        }
-    else:
-        conversation = _get_conversation(conversation_id)
-        if not conversation:
-            conversation = {
-                "conversation_id": conversation_id,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "history": [],
-                "spec_draft": None,
-                "status": "in_progress",
-            }
 
-    history = conversation.get("history", [])
+    # 기존 대화 이력 조회
+    conv = get_conversation(conversation_id)
+    history = conv.get("history", []) if conv else []
 
-    # Gemini 호출
-    gemini_history = _build_gemini_history(history)
-    chat_session = model.start_chat(history=gemini_history)
+    # Gemini API 호출
+    try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-    # 첫 메시지면 시스템 프롬프트 포함
-    if not history:
-        full_message = f"{SYSTEM_PROMPT}\n\n사용자 메시지: {message}"
-    else:
-        full_message = message
+        # 대화 이력 구성
+        contents = [{"role": "user", "parts": [{"text": SYSTEM_PROMPT}]}]
+        for h in history:
+            contents.append({
+                "role": h["role"],
+                "parts": [{"text": h["text"]}],
+            })
+        contents.append({
+            "role": "user",
+            "parts": [{"text": message}],
+        })
 
-    response = chat_session.send_message(full_message)
-    reply = response.text
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=contents,
+        )
+        reply = response.text
 
-    # 히스토리 업데이트
-    history.append({"role": "user", "content": message})
-    history.append({"role": "model", "content": reply})
+    except Exception as e:
+        logger.error(f"Gemini API 호출 실패: {e}")
+        raise
 
-    # spec_draft 추출
-    spec_draft = _extract_spec_draft(reply)
-    if spec_draft:
-        conversation["spec_draft"] = spec_draft
+    # 응답에서 spec_draft 추출
+    spec_draft = extract_spec_from_response(reply)
 
-    conversation["history"] = history
-    _save_conversation(conversation)
+    # 대화 이력 업데이트
+    history.append({"role": "user", "text": message})
+    history.append({"role": "model", "text": reply})
+
+    # DynamoDB에 저장
+    save_conversation(conversation_id, history, spec_draft)
 
     return {
         "conversation_id": conversation_id,
         "reply": reply,
-        "spec_draft": spec_draft or conversation.get("spec_draft"),
+        "spec_draft": spec_draft,
     }
 
 
-def retry() -> dict:
-    """새 채팅 세션 생성 (재시도)"""
+def retry_chat() -> dict:
+    """새 채팅 세션 시작"""
     new_id = str(uuid.uuid4())
-    conversation = {
-        "conversation_id": new_id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "history": [],
-        "spec_draft": None,
-        "status": "in_progress",
-    }
-    _save_conversation(conversation)
+    save_conversation(new_id, [], None, status="active")
     return {"conversation_id": new_id}
-
-
-def get_spec_draft(conversation_id: str) -> dict | None:
-    """대화 세션에서 현재 spec_draft 조회"""
-    conversation = _get_conversation(conversation_id)
-    if not conversation:
-        return None
-    return conversation.get("spec_draft")

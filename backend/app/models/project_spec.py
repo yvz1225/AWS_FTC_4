@@ -1,4 +1,4 @@
-"""Project_Spec 데이터 모델"""
+"""Project_Spec Pydantic 모델"""
 from pydantic import BaseModel, EmailStr, HttpUrl
 from datetime import date
 from typing import Optional
@@ -28,28 +28,3 @@ class ProjectSpec(BaseModel):
     project_info: ProjectInfo
     members: list[MemberSpec]
     tasks: list[TaskSpec]
-
-
-class ChatRequest(BaseModel):
-    conversation_id: Optional[str] = None
-    message: str
-
-
-class ChatResponse(BaseModel):
-    conversation_id: str
-    reply: str
-    spec_draft: Optional[dict] = None
-
-
-class RetryResponse(BaseModel):
-    conversation_id: str
-
-
-class ApproveRequest(BaseModel):
-    conversation_id: str
-
-
-class ApproveResponse(BaseModel):
-    status: str
-    notion_page_url: Optional[str] = None
-    errors: Optional[list[dict]] = None

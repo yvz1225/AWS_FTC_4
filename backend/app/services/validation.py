@@ -1,7 +1,10 @@
-"""Validation_Service - Project_Spec 검증 로직"""
+"""Validation_Service: Project_Spec 검증 로직"""
 import re
 import logging
-from datetime import date, datetime
+from datetime import date
+from pydantic import ValidationError
+
+from app.models.project_spec import ProjectSpec, MemberSpec, TaskSpec
 
 logger = logging.getLogger(__name__)
 
@@ -11,185 +14,122 @@ ROLE_NORMALIZATION = {
     "프론트엔드": "프론트엔드",
     "frontend": "프론트엔드",
     "front": "프론트엔드",
-    "fe": "프론트엔드",
     "백엔드": "백엔드",
     "백": "백엔드",
     "backend": "백엔드",
     "back": "백엔드",
-    "be": "백엔드",
-    "디자인": "디자인",
-    "디자이너": "디자인",
-    "design": "디자인",
-    "designer": "디자인",
-    "ui": "디자인",
-    "ux": "디자인",
-    "ui/ux": "디자인",
     "기획": "기획",
-    "기획자": "기획",
     "pm": "기획",
-    "planner": "기획",
+    "디자인": "디자인",
+    "design": "디자인",
     "풀스택": "풀스택",
     "fullstack": "풀스택",
-    "full-stack": "풀스택",
-    "full stack": "풀스택",
-    "데이터": "데이터",
-    "data": "데이터",
-    "ml": "데이터",
-    "ai": "데이터",
 }
 
-GITHUB_ID_PATTERN = re.compile(r"^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$")
-GITHUB_REPO_PATTERN = re.compile(r"^https?://github\.com/[\w\-\.]+/[\w\-\.]+/?$")
-EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$")
+GITHUB_ID_PATTERN = re.compile(r"^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$")
+GITHUB_REPO_PATTERN = re.compile(
+    r"^https?://github\.com/[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+/?$"
+)
 
 
-def validate_spec(spec_draft: dict) -> tuple[dict | None, list[dict]]:
+def validate_github_id(github_id: str) -> bool:
+    return bool(GITHUB_ID_PATTERN.match(github_id))
+
+
+def validate_repo_url(url: str) -> bool:
+    return bool(GITHUB_REPO_PATTERN.match(url))
+
+
+def normalize_role(role: str) -> str:
+    return ROLE_NORMALIZATION.get(role.lower().strip(), role.strip())
+
+
+def remove_duplicate_members(members: list[dict]) -> list[dict]:
+    """동일 이메일 또는 GitHub ID 기준 중복 제거"""
+    seen_emails = set()
+    seen_github = set()
+    unique = []
+    for m in members:
+        email = m.get("email", "").lower()
+        gid = m.get("github_id", "").lower()
+        if email in seen_emails or gid in seen_github:
+            continue
+        seen_emails.add(email)
+        seen_github.add(gid)
+        unique.append(m)
+    return unique
+
+
+def remove_empty_tasks(tasks: list[dict]) -> list[dict]:
+    """빈 task(이름 없음) 제거"""
+    return [t for t in tasks if t.get("name", "").strip()]
+
+
+def validate_spec(raw_spec: dict) -> dict:
     """
-    Project_Spec 초안을 검증하고 정제한다.
-    Returns: (validated_spec, errors)
-    - 성공 시: (정제된 spec dict, [])
-    - 실패 시: (None, [에러 목록])
+    Project_Spec 전체 검증.
+    성공 시 {"valid": True, "spec": ProjectSpec}
+    실패 시 {"valid": False, "errors": [...]}
     """
     errors = []
 
-    # --- 1. 필수 필드 존재 확인 ---
-    project_info = spec_draft.get("project_info")
-    if not project_info:
-        errors.append({"field": "project_info", "message": "프로젝트 정보가 누락되었습니다"})
-        return None, errors
-
-    if not project_info.get("name", "").strip():
-        errors.append({"field": "project_info.name", "message": "프로젝트명이 누락되었습니다"})
-
-    members = spec_draft.get("members", [])
-    if not members:
-        errors.append({"field": "members", "message": "팀원 정보가 누락되었습니다"})
-
-    tasks = spec_draft.get("tasks", [])
+    # 필수 필드 확인
+    if "project_info" not in raw_spec:
+        errors.append({"field": "project_info", "message": "프로젝트 정보 누락"})
+    if "members" not in raw_spec or not raw_spec["members"]:
+        errors.append({"field": "members", "message": "팀원 정보 누락"})
 
     if errors:
-        return None, errors
+        return {"valid": False, "errors": errors}
 
-    # --- 2. repo URL 검증 ---
-    repo_url = str(project_info.get("repo_url", ""))
-    if repo_url and not GITHUB_REPO_PATTERN.match(repo_url):
-        errors.append({"field": "project_info.repo_url", "message": f"유효하지 않은 GitHub 저장소 URL: {repo_url}"})
+    pi = raw_spec["project_info"]
 
-    # --- 3. deadline 파싱 ---
-    deadline_str = project_info.get("deadline", "")
-    if deadline_str:
-        parsed = _parse_date(deadline_str)
-        if parsed is None:
-            errors.append({"field": "project_info.deadline", "message": f"날짜 파싱 실패: {deadline_str}"})
-        else:
-            project_info["deadline"] = parsed.isoformat()
+    # 프로젝트명 확인
+    if not pi.get("name", "").strip():
+        errors.append({"field": "project_info.name", "message": "프로젝트명 누락"})
 
-    # --- 4. 팀원 검증 + 중복 제거 + 역할 정규화 ---
-    seen_emails = set()
-    seen_github_ids = set()
-    validated_members = []
+    # repo URL 검증
+    repo_url = str(pi.get("repo_url", ""))
+    if repo_url and not validate_repo_url(repo_url):
+        errors.append({"field": "project_info.repo_url", "message": "유효하지 않은 GitHub 저장소 URL"})
 
-    for i, member in enumerate(members):
-        name = member.get("name", "").strip()
-        role = member.get("role", "").strip()
-        github_id = member.get("github_id", "").strip()
-        email = member.get("email", "").strip()
-
-        # 필수 필드
-        if not name:
-            errors.append({"field": f"members[{i}].name", "message": "팀원 이름이 누락되었습니다"})
-            continue
-        if not role:
-            errors.append({"field": f"members[{i}].role", "message": f"{name}의 역할이 누락되었습니다"})
-            continue
-
-        # 이메일 검증
-        if email and not EMAIL_PATTERN.match(email):
-            errors.append({"field": f"members[{i}].email", "message": f"유효하지 않은 이메일 형식: {email}"})
-            continue
-
-        # GitHub ID 검증
-        if github_id and not GITHUB_ID_PATTERN.match(github_id):
-            errors.append({"field": f"members[{i}].github_id", "message": f"유효하지 않은 GitHub ID: {github_id}"})
-            continue
-
-        # 중복 제거
-        if email.lower() in seen_emails:
-            logger.info(f"중복 이메일 제거: {email}")
-            continue
-        if github_id.lower() in seen_github_ids:
-            logger.info(f"중복 GitHub ID 제거: {github_id}")
-            continue
-
-        if email:
-            seen_emails.add(email.lower())
-        if github_id:
-            seen_github_ids.add(github_id.lower())
-
-        # 역할 정규화
-        normalized_role = ROLE_NORMALIZATION.get(role.lower(), role)
-
-        validated_members.append({
-            "name": name,
-            "role": normalized_role,
-            "github_id": github_id,
-            "email": email,
-        })
-
-    if not validated_members:
-        errors.append({"field": "members", "message": "유효한 팀원이 없습니다"})
-
-    # --- 5. Task 검증 + 빈 task 제거 ---
-    validated_tasks = []
-    for i, task in enumerate(tasks):
-        task_name = task.get("name", "").strip()
-        if not task_name:
-            logger.info(f"빈 task 제거: index {i}")
-            continue
-
-        # task deadline 파싱
-        task_deadline = task.get("deadline", "")
-        if task_deadline:
-            parsed = _parse_date(task_deadline)
-            if parsed is None:
-                errors.append({"field": f"tasks[{i}].deadline", "message": f"날짜 파싱 실패: {task_deadline}"})
-                continue
-            task_deadline = parsed.isoformat()
-
-        validated_tasks.append({
-            "name": task_name,
-            "assignee": task.get("assignee", "").strip(),
-            "deadline": task_deadline,
-            "category": task.get("category", "").strip(),
-        })
-
-    if errors:
-        return None, errors
-
-    # --- 6. 정제된 spec 반환 ---
-    validated_spec = {
-        "project_info": {
-            "name": project_info["name"].strip(),
-            "repo_url": repo_url,
-            "deadline": project_info.get("deadline", ""),
-        },
-        "members": validated_members,
-        "tasks": validated_tasks,
-    }
-
-    return validated_spec, []
-
-
-def _parse_date(date_str) -> date | None:
-    """다양한 형식의 날짜 문자열을 파싱"""
-    if isinstance(date_str, date):
-        return date_str
-
-    date_str = str(date_str).strip()
-    formats = ["%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%m/%d/%Y", "%d-%m-%Y"]
-    for fmt in formats:
+    # deadline 파싱
+    deadline_str = pi.get("deadline", "")
+    if deadline_str and isinstance(deadline_str, str):
         try:
-            return datetime.strptime(date_str, fmt).date()
+            date.fromisoformat(deadline_str)
         except ValueError:
-            continue
-    return None
+            errors.append({"field": "project_info.deadline", "message": "날짜 파싱 실패"})
+
+    # 팀원 검증
+    members = raw_spec.get("members", [])
+    for i, m in enumerate(members):
+        if not m.get("name", "").strip():
+            errors.append({"field": f"members[{i}].name", "message": "팀원 이름 누락"})
+        if not m.get("role", "").strip():
+            errors.append({"field": f"members[{i}].role", "message": "역할 누락"})
+        if m.get("github_id") and not validate_github_id(m["github_id"]):
+            errors.append({"field": f"members[{i}].github_id", "message": "유효하지 않은 GitHub ID"})
+
+    if errors:
+        return {"valid": False, "errors": errors}
+
+    # 정규화 처리
+    members = remove_duplicate_members(members)
+    for m in members:
+        m["role"] = normalize_role(m.get("role", ""))
+
+    tasks = remove_empty_tasks(raw_spec.get("tasks", []))
+
+    raw_spec["members"] = members
+    raw_spec["tasks"] = tasks
+
+    # Pydantic 모델로 최종 검증
+    try:
+        spec = ProjectSpec(**raw_spec)
+        return {"valid": True, "spec": spec}
+    except ValidationError as e:
+        return {"valid": False, "errors": [
+            {"field": err["loc"], "message": err["msg"]}
+            for err in e.errors()
+        ]}

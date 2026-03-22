@@ -1,10 +1,10 @@
-"""Warning API: 무임승차 경고 메일 수동 발송"""
+"""Warning API: 무임승차 경고 알림 수동 발송 (SNS)"""
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 import boto3
 import logging
 
-from app.config import AWS_REGION, SES_SENDER_EMAIL
+from app.config import AWS_REGION, SNS_TOPIC_ARN
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -12,17 +12,16 @@ logger = logging.getLogger(__name__)
 
 class WarningRequest(BaseModel):
     project_id: str
-    member_email: EmailStr
     member_name: str
     activity_estimate: float
 
 
 @router.post("/send-warning")
 def send_warning(req: WarningRequest):
-    """무임승차 경고 메일 발송"""
-    ses = boto3.client("ses", region_name=AWS_REGION)
+    """무임승차 경고 SNS 알림 발송"""
+    sns = boto3.client("sns", region_name=AWS_REGION)
 
-    body = (
+    message = (
         f"안녕하세요, {req.member_name}님.\n\n"
         f"현재 프로젝트 활동 지표가 {req.activity_estimate}%로 "
         f"팀 평균에 비해 낮은 수준입니다.\n\n"
@@ -31,15 +30,12 @@ def send_warning(req: WarningRequest):
     )
 
     try:
-        ses.send_email(
-            Source=SES_SENDER_EMAIL,
-            Destination={"ToAddresses": [req.member_email]},
-            Message={
-                "Subject": {"Data": "[경고] 팀 프로젝트 참여도 알림"},
-                "Body": {"Text": {"Data": body}},
-            },
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject=f"[경고] 팀 프로젝트 참여도 알림 - {req.member_name}",
+            Message=message,
         )
         return {"status": "sent"}
     except Exception as e:
-        logger.error(f"경고 메일 발송 실패 ({req.member_email}): {e}")
+        logger.error(f"경고 SNS 발송 실패 ({req.member_name}): {e}")
         raise HTTPException(status_code=500, detail=str(e))
