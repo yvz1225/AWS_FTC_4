@@ -28,7 +28,7 @@
 └──────────────┘ └─────────────┘ └────────────────────┘
 
 ┌──────────────────────────────────────────────────────┐
-│              EventBridge (1시간 주기)                  │
+│              CloudWatch Events (1시간 주기)                │
 │  ┌─────────────────┐    ┌──────────────────────┐     │
 │  │  Tracker_Agent  │    │  Reminder_Service    │     │
 │  │  (Lambda)       │    │  (Lambda)            │     │
@@ -434,7 +434,7 @@ Notion_Builder가 생성하는 페이지 구조:
   4. 생성된 페이지 URL 반환
 
 ### 6.3 Tracker_Agent Lambda
-- **트리거:** EventBridge rate(1 hour)
+- **트리거:** CloudWatch Events rate(1 hour)
 - **런타임:** Python 3.12
 - **환경 변수:** GITHUB_TOKEN, NOTION_API_KEY
 - **로직:**
@@ -445,7 +445,7 @@ Notion_Builder가 생성하는 페이지 구조:
   5. Activity_Log를 DynamoDB에 저장
 
 ### 6.4 Reminder_Service Lambda
-- **트리거:** EventBridge rate(1 hour)
+- **트리거:** CloudWatch Events rate(1 hour)
 - **런타임:** Python 3.12
 - **환경 변수:** NOTION_API_KEY, SES 설정
 - **로직:**
@@ -513,10 +513,10 @@ NOTION_PARENT_PAGE_ID=your_notion_parent_page_id
 GITHUB_TOKEN=your_github_personal_access_token
 
 # AWS
-AWS_REGION=ap-northeast-2
+AWS_REGION=us-east-1
 
 # Frontend
-VITE_API_URL=https://your-api-gateway-id.execute-api.ap-northeast-2.amazonaws.com
+VITE_API_URL=https://your-api-gateway-id.execute-api.us-east-1.amazonaws.com
 ```
 
 ---
@@ -529,7 +529,7 @@ service: team-up-sentinel
 provider:
   name: aws
   runtime: python3.12
-  region: ap-northeast-2
+  region: us-east-1
   environment:
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
     NOTION_API_KEY: ${env:NOTION_API_KEY}
