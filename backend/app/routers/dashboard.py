@@ -12,10 +12,9 @@ logger = logging.getLogger(__name__)
 def get_activity(project_id: str):
     """팀원별 최신 활동 지표 조회"""
     try:
+        # 매번 Notion/GitHub에서 최신 데이터를 가져옴
+        run_tracker()
         logs = get_activity_logs(project_id)
-        if not logs:
-            run_tracker()
-            logs = get_activity_logs(project_id)
 
         seen = set()
         members = []

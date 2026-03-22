@@ -21,7 +21,7 @@
 - [ ] AWS 계정 세팅 (Lambda, CloudWatch Events, SES, DynamoDB, API Gateway) — 백엔드 B
 - [ ] Notion Integration 생성 및 API Key 발급 — 백엔드 A
 - [ ] GitHub Personal Access Token 발급 — 백엔드 B
-- [ ] Gemini API Key 발급 — 백엔드 A
+- [ ] OpenAI API Key 발급 — 백엔드 A
 - [ ] DynamoDB 테이블 생성 (activity_logs, availability, conversations) — 백엔드 B
 - [ ] Serverless Framework 초기 설정 (serverless.yml) — 백엔드 B
 
@@ -33,12 +33,12 @@
 
 #### Chat_Agent (요구사항 1, 8)
 - [ ] POST /chat 엔드포인트 구현
-- [ ] Gemini API 연동 (google-generativeai)
+- [ ] GPT API 연동 (openai)
 - [ ] conversation_id 기반 세션 관리 (DynamoDB conversations 테이블)
 - [ ] 멀티턴 대화 히스토리 관리
-- [ ] Project_Spec 초안 생성 로직 (Gemini 응답에서 JSON 추출)
+- [ ] Project_Spec 초안 생성 로직 (GPT 응답에서 JSON 추출)
 - [ ] POST /chat/retry 엔드포인트 (새 Conversation_ID 발급, UI 초기화)
-- [ ] Gemini API 실패 시 HTTP 500 에러 핸들링
+- [ ] GPT API 실패 시 HTTP 500 에러 핸들링
 
 #### Validation_Service (요구사항 2)
 - [ ] Pydantic 모델 정의 (ProjectSpec, MemberSpec, TaskSpec, ProjectInfo)
