@@ -1,0 +1,139 @@
+service: team-up-sentinel
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: ap-northeast-2
+  environment:
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    NOTION_API_KEY: ${env:NOTION_API_KEY}
+    NOTION_PARENT_PAGE_ID: ${env:NOTION_PARENT_PAGE_ID}
+    GITHUB_TOKEN: ${env:GITHUB_TOKEN}
+    SES_SENDER_EMAIL: ${env:SES_SENDER_EMAIL}
+    ACTIVITY_LOGS_TABLE: activity_logs
+    AVAILABILITY_TABLE: availability
+    CONVERSATIONS_TABLE: conversations
+    PROJECTS_TABLE: projects
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:ap-northeast-2:*:table/activity_logs
+            - arn:aws:dynamodb:ap-northeast-2:*:table/availability
+            - arn:aws:dynamodb:ap-northeast-2:*:table/conversations
+            - arn:aws:dynamodb:ap-northeast-2:*:table/projects
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+          Resource: "*"
+
+functions:
+  # --- 백엔드 A 담당 (placeholder) ---
+  # chatAgent:
+  #   handler: app.handlers.chat_handler
+  #   events:
+  #     - httpApi:
+  #         path: /chat
+  #         method: post
+
+  # --- 백엔드 B 담당 ---
+  trackerAgent:
+    handler: app.handlers.tracker_handler
+    timeout: 120
+    events:
+      - schedule: rate(1 hour)
+
+  reminderService:
+    handler: app.handlers.reminder_handler
+    timeout: 60
+    events:
+      - schedule: rate(1 hour)
+
+  dashboardApi:
+    handler: app.handlers.dashboard_handler
+    events:
+      - httpApi:
+          path: /dashboard/activity/{project_id}
+          method: get
+
+  availabilityApi:
+    handler: app.handlers.availability_handler
+    events:
+      - httpApi:
+          path: /availability
+          method: post
+      - httpApi:
+          path: /availability/{project_id}
+          method: get
+
+  warningApi:
+    handler: app.handlers.warning_handler
+    events:
+      - httpApi:
+          path: /send-warning
+          method: post
+
+resources:
+  Resources:
+    ActivityLogsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: activity_logs
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: project_id
+            AttributeType: S
+          - AttributeName: timestamp_member
+            AttributeType: S
+        KeySchema:
+          - AttributeName: project_id
+            KeyType: HASH
+          - AttributeName: timestamp_member
+            KeyType: RANGE
+
+    AvailabilityTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: availability
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: project_id
+            AttributeType: S
+          - AttributeName: member_day_time
+            AttributeType: S
+        KeySchema:
+          - AttributeName: project_id
+            KeyType: HASH
+          - AttributeName: member_day_time
+            KeyType: RANGE
+
+    ConversationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: conversations
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: conversation_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: conversation_id
+            KeyType: HASH
+
+    ProjectsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: projects
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: project_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: project_id
+            KeyType: HASH
