@@ -3,7 +3,7 @@ service: team-up-sentinel
 provider:
   name: aws
   runtime: python3.12
-  region: ap-northeast-2
+  region: us-east-1
   environment:
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
     NOTION_API_KEY: ${env:NOTION_API_KEY}
@@ -25,10 +25,10 @@ provider:
             - dynamodb:Scan
             - dynamodb:DeleteItem
           Resource:
-            - arn:aws:dynamodb:ap-northeast-2:*:table/activity_logs
-            - arn:aws:dynamodb:ap-northeast-2:*:table/availability
-            - arn:aws:dynamodb:ap-northeast-2:*:table/conversations
-            - arn:aws:dynamodb:ap-northeast-2:*:table/projects
+            - arn:aws:dynamodb:us-east-1:*:table/activity_logs
+            - arn:aws:dynamodb:us-east-1:*:table/availability
+            - arn:aws:dynamodb:us-east-1:*:table/conversations
+            - arn:aws:dynamodb:us-east-1:*:table/projects
         - Effect: Allow
           Action:
             - ses:SendEmail

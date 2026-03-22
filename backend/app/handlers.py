@@ -1,4 +1,4 @@
-"""Lambda 핸들러 (Mangum으로 FastAPI → Lambda 변환 + EventBridge 핸들러)"""
+"""Lambda 핸들러 (Mangum으로 FastAPI → Lambda 변환 + CloudWatch Events 핸들러)"""
 import json
 import logging
 from mangum import Mangum
@@ -29,7 +29,7 @@ def warning_handler(event, context):
 
 
 def tracker_handler(event, context):
-    """Tracker_Agent Lambda 핸들러 (EventBridge 트리거)"""
+    """Tracker_Agent Lambda 핸들러 (CloudWatch Events 트리거)"""
     try:
         result = run_tracker()
         logger.info(f"Tracker 실행 완료: {result}")
@@ -40,7 +40,7 @@ def tracker_handler(event, context):
 
 
 def reminder_handler(event, context):
-    """Reminder_Service Lambda 핸들러 (EventBridge 트리거)"""
+    """Reminder_Service Lambda 핸들러 (CloudWatch Events 트리거)"""
     try:
         result = run_reminder()
         logger.info(f"Reminder 실행 완료: {result}")
