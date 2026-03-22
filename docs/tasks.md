@@ -18,7 +18,7 @@
 - [ ] 백엔드 FastAPI 프로젝트 초기화 — 백엔드 A
 - [ ] .env.example 작성 — 백엔드 A
 - [ ] .gitignore 설정 (.env, node_modules, __pycache__, .venv) — 백엔드 A
-- [ ] AWS 계정 세팅 (Lambda, EventBridge, SES, DynamoDB, API Gateway) — 백엔드 B
+- [ ] AWS 계정 세팅 (Lambda, CloudWatch Events, SES, DynamoDB, API Gateway) — 백엔드 B
 - [ ] Notion Integration 생성 및 API Key 발급 — 백엔드 A
 - [ ] GitHub Personal Access Token 발급 — 백엔드 B
 - [ ] Gemini API Key 발급 — 백엔드 A
@@ -66,7 +66,7 @@
 ### 백엔드 B: Tracker + Reminder + Availability + Dashboard + Warning
 
 #### Tracker_Agent (요구사항 4, 6)
-- [ ] EventBridge rate(1 hour) 트리거 설정
+- [ ] CloudWatch Events rate(1 hour) 트리거 설정
 - [ ] DynamoDB에서 활성 프로젝트 목록 조회
 - [ ] GitHub API 연동 (팀원별 커밋 수 수집)
 - [ ] Notion API 연동 (각 팀원 인라인 DB에서 상태 수집)
@@ -77,7 +77,7 @@
 - [ ] GitHub API 또는 Notion API 실패 시 에러 로깅 + 나머지 소스 계속 수집
 
 #### Reminder_Service (요구사항 7)
-- [ ] EventBridge rate(1 hour) 트리거 설정
+- [ ] CloudWatch Events rate(1 hour) 트리거 설정
 - [ ] 현재 시간이 KST 12:00인지 판정 로직
 - [ ] 각 팀원 Notion 인라인 DB에서 내일 마감 + 미완료(상태 ≠ 완료) task 조회
 - [ ] AWS SES 메일 발송 연동
@@ -155,11 +155,12 @@
 - [ ] Lambda 함수 핸들러 작성 — 각자 담당 서비스 핸들러
   - 백엔드 A: chat_handler, notion_handler
   - 백엔드 B: tracker_handler, reminder_handler, dashboard_handler, availability_handler, warning_handler
-- [ ] EventBridge 스케줄 설정 (Tracker_Agent + Reminder_Service) — 백엔드 B
+- [ ] CloudWatch Events 스케줄 설정 (Tracker_Agent + Reminder_Service) — 백엔드 B
 - [ ] AWS SES 발신자 이메일 인증 — 백엔드 B
 - [ ] API Gateway REST 엔드포인트 구성 — 백엔드 B
 - [ ] DynamoDB 테이블 프로비저닝 — 백엔드 B
 - [ ] Lambda 환경 변수 주입 — 백엔드 B
+- [ ] Lambda 함수 역할을 SafeRole-{username}으로 설정 (새 역할 생성 불가) — 백엔드 B
 - [ ] CORS 설정 (프론트엔드 → API Gateway) — 백엔드 B
 
 ---
@@ -173,5 +174,5 @@
 - [ ] 시간표 UI 저장/조회 테스트 — 프론트 B + 백엔드 B
 - [ ] 대시보드 Activity_Status 표시 테스트 — 프론트 B + 백엔드 B
 - [ ] 전체 시나리오 E2E 테스트 — 공통 (4명)
-- [ ] 프론트엔드 빌드 및 배포 (S3 + CloudFront 또는 Vercel) — 프론트 A
+- [ ] 프론트엔드 빌드 및 배포 (S3 또는 Amplify) — 프론트 A
 - [ ] 백엔드 Serverless 배포 (sls deploy) — 백엔드 B
