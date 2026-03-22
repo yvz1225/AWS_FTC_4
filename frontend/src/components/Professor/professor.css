@@ -1,0 +1,286 @@
+.prof-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.prof-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.prof-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prof-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prof-header-links {
+  display: flex;
+  gap: 10px;
+}
+
+.prof-link {
+  font-size: 13px;
+  color: #0077b6;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid #0077b6;
+  border-radius: 6px;
+}
+
+.prof-link:hover {
+  background: #e6f3fa;
+}
+
+.prof-semester {
+  font-size: 13px;
+  color: #888;
+}
+
+.prof-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.prof-btn-primary:hover {
+  background: #2a2a4e;
+}
+
+.prof-btn-back {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.prof-btn-back:hover {
+  background: #f0f0f0;
+}
+
+/* 수업 추가 폼 */
+.prof-add-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+.prof-add-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.prof-add-form input:focus {
+  border-color: #1a1a2e;
+}
+
+/* 수업 카드 그리드 */
+.prof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.prof-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.prof-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.prof-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.prof-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* 팀 목록 */
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.team-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.team-row:hover {
+  box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+}
+
+.team-row-name strong {
+  font-size: 15px;
+}
+
+.team-row-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.team-stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #555;
+}
+
+.team-warning {
+  color: #c1121f;
+  font-weight: 600;
+}
+
+/* 팀 상세 */
+.detail-progress {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.detail-progress h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.detail-progress-track {
+  width: 100%;
+  height: 14px;
+  background: #e8e8e8;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.detail-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2d6a4f, #40916c);
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+
+.detail-progress-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+.detail-members {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-member-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.detail-member-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.detail-member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.detail-member-info strong {
+  font-size: 14px;
+}
+
+.detail-role {
+  font-size: 12px;
+  color: #666;
+}
+
+.detail-email {
+  font-size: 11px;
+  color: #888;
+}
+
+.detail-github {
+  font-size: 11px;
+  color: #0077b6;
+}
+
+.detail-status {
+  font-size: 11px;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+}

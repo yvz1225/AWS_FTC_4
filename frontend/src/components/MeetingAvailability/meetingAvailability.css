@@ -1,0 +1,336 @@
+/* ===== Root ===== */
+.ma-root {
+  background: #ffffff;
+  border: 1px solid #e3e8ef;
+  border-radius: 22px;
+  box-shadow: 0 2px 12px rgba(27, 34, 54, 0.04);
+  padding: 24px 26px;
+  font-family: inherit;
+  width: fit-content;
+  min-width: 0;
+}
+
+/* ===== Header ===== */
+.ma-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.ma-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #1b2236;
+}
+
+.ma-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #687389;
+}
+
+/* ===== View Toggle ===== */
+.ma-view-toggle {
+  display: flex;
+  gap: 6px;
+  background: #f3f5f9;
+  border-radius: 14px;
+  padding: 4px;
+}
+
+.ma-toggle-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  color: #687389;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ma-toggle-btn.active {
+  background: #ffffff;
+  color: #1b2236;
+  box-shadow: 0 1px 4px rgba(27, 34, 54, 0.1);
+}
+
+/* ===== Member Tabs ===== */
+.ma-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.ma-tab-btn {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #f3f5f9;
+  color: #687389;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ma-tab-btn.active {
+  background: #2f63f3;
+  color: #ffffff;
+  border-color: #2f63f3;
+}
+
+.ma-tab-btn:hover:not(.active) {
+  background: #e8edf5;
+  color: #1b2236;
+}
+
+/* ===== Hint ===== */
+.ma-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #8a94a8;
+}
+
+/* ===== Grid ===== */
+.ma-grid-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ma-grid {
+  border-collapse: collapse;
+  user-select: none;
+  min-width: 360px;
+}
+
+.ma-th-time {
+  width: 44px;
+  min-width: 44px;
+}
+
+.ma-th-day {
+  width: 44px;
+  min-width: 44px;
+  padding: 4px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #687389;
+  text-align: center;
+}
+
+.ma-td-time {
+  padding: 0 6px 0 0;
+  font-size: 10px;
+  color: #8a94a8;
+  text-align: right;
+  white-space: nowrap;
+  vertical-align: middle;
+  height: 22px;
+}
+
+.ma-cell {
+  height: 22px;
+  width: 44px;
+  border: 1px solid #e8edf3;
+  background: #f9fbfd;
+  cursor: pointer;
+  transition: background 0.08s;
+  position: relative;
+}
+
+.ma-cell:hover {
+  background: #dce8ff;
+}
+
+.ma-cell.selected {
+  background: #2f63f3;
+  border-color: #2356d4;
+}
+
+.ma-cell.selected:hover {
+  background: #1e52d0;
+}
+
+/* ===== Overlap color scale (0~4명) ===== */
+.ma-cell.overlap-0 { background: #f9fbfd; }
+.ma-cell.overlap-1 { background: #dce8ff; border-color: #b8d0ff; }
+.ma-cell.overlap-2 { background: #93b8ff; border-color: #6a9bff; }
+.ma-cell.overlap-3 { background: #4a7ef5; border-color: #2f63f3; }
+.ma-cell.overlap-4 { background: #1b4fd8; border-color: #1540b8; }
+
+.ma-cell-count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+}
+
+.ma-cell.overlap-1 .ma-cell-count { color: #2f63f3; }
+
+/* ===== Legend ===== */
+.ma-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.ma-legend-label {
+  font-size: 12px;
+  color: #687389;
+  font-weight: 600;
+}
+
+.ma-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #687389;
+}
+
+.ma-legend-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid #e3e8ef;
+}
+
+.ma-legend-swatch.overlap-0 { background: #f9fbfd; }
+.ma-legend-swatch.overlap-1 { background: #dce8ff; }
+.ma-legend-swatch.overlap-2 { background: #93b8ff; }
+.ma-legend-swatch.overlap-3 { background: #4a7ef5; }
+.ma-legend-swatch.overlap-4 { background: #1b4fd8; }
+
+/* ===== Overlap Section ===== */
+.ma-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a94a8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.ma-overlap-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 24px;
+  align-items: start;
+}
+
+.ma-overlap-grid-col,
+.ma-overlap-rec-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.ma-overlap-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.ma-empty {
+  font-size: 14px;
+  color: #8a94a8;
+  margin: 8px 0;
+}
+
+/* ===== Recommendation Cards ===== */
+.ma-rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ma-rec-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f9fbfd;
+  border: 1px solid #e3e8ef;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.ma-rec-rank {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1b2236;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ma-rec-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ma-rec-day {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a94a8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ma-rec-time {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1b2236;
+}
+
+.ma-rec-meta {
+  font-size: 12px;
+  color: #8a94a8;
+  font-weight: 500;
+}
+
+@media (max-width: 700px) {
+  .ma-overlap-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Edit Section ===== */
+.ma-edit-section {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .ma-root {
+    padding: 16px;
+  }
+
+  .ma-header {
+    flex-direction: column;
+  }
+
+  .ma-th-day {
+    min-width: 40px;
+  }
+}
