@@ -24,7 +24,7 @@
        │                │                   │
        ▼                ▼                   ▼
 ┌──────────────┐ ┌─────────────┐ ┌────────────────────┐
-│  Gemini API  │ │  Notion API │ │     DynamoDB       │
+│  GPT API     │ │  Notion API │ │     DynamoDB       │
 └──────────────┘ └─────────────┘ └────────────────────┘
 
 ┌──────────────────────────────────────────────────────┐
@@ -74,7 +74,7 @@
 │   │   │   ├── dashboard.py     # GET /dashboard/activity
 │   │   │   └── availability.py  # POST/GET /availability
 │   │   ├── services/
-│   │   │   ├── chat_agent.py     # Gemini API 연동
+│   │   │   ├── chat_agent.py     # GPT API 연동
 │   │   │   ├── validation.py    # Project_Spec 검증
 │   │   │   ├── notion_builder.py # Notion 페이지/DB 생성
 │   │   │   ├── tracker.py       # GitHub + Notion 활동 수집
@@ -103,7 +103,7 @@
 ### 3.1 Chat_Agent API
 
 #### POST /chat
-채팅 메시지를 전송하고 Gemini 응답을 받는다.
+채팅 메시지를 전송하고 GPT 응답을 받는다.
 
 **Request:**
 ```json
@@ -415,10 +415,10 @@ Notion_Builder가 생성하는 페이지 구조:
 ### 6.1 Chat_Agent Lambda
 - **트리거:** API Gateway POST /chat, /approve, /chat/retry
 - **런타임:** Python 3.12
-- **환경 변수:** GEMINI_API_KEY
+- **환경 변수:** OPENAI_API_KEY
 - **로직:**
   1. conversation_id로 DynamoDB에서 대화 이력 조회
-  2. 사용자 메시지 + 이력을 Gemini API에 전달
+  2. 사용자 메시지 + 이력을 GPT API에 전달
   3. 응답에서 Project_Spec 초안 추출 (있으면)
   4. 대화 이력 + 초안을 DynamoDB에 저장
   5. 응답 반환
@@ -502,8 +502,8 @@ Notion_Builder가 생성하는 페이지 구조:
 ```env
 # .env.example
 
-# Gemini
-GEMINI_API_KEY=your_google_gemini_api_key
+# OpenAI (GPT)
+OPENAI_API_KEY=your_openai_api_key
 
 # Notion
 NOTION_API_KEY=your_notion_integration_secret
@@ -531,7 +531,7 @@ provider:
   runtime: python3.12
   region: us-east-1
   environment:
-    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
     NOTION_API_KEY: ${env:NOTION_API_KEY}
     NOTION_PARENT_PAGE_ID: ${env:NOTION_PARENT_PAGE_ID}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN}
