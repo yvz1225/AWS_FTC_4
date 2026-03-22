@@ -1,50 +1,38 @@
-"""Dashboard API: 팀원별 활동 지표 조회"""
+"""Dashboard API: 팀원별 활동 지표 조회 (인메모리 더미 데이터)"""
 from fastapi import APIRouter, HTTPException
-import boto3
-from boto3.dynamodb.conditions import Key
 import logging
 
-from app.config import AWS_REGION, ACTIVITY_LOGS_TABLE
+from app.services.tracker import get_activity_logs, run_tracker
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-def get_table():
-    dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-    return dynamodb.Table(ACTIVITY_LOGS_TABLE)
-
-
 @router.get("/dashboard/activity/{project_id}")
 def get_activity(project_id: str):
     """팀원별 최신 활동 지표 조회"""
-    table = get_table()
     try:
-        resp = table.query(
-            KeyConditionExpression=Key("project_id").eq(project_id),
-            ScanIndexForward=False,  # 최신순
-        )
-        items = resp.get("Items", [])
+        logs = get_activity_logs(project_id)
+        if not logs:
+            run_tracker()
+            logs = get_activity_logs(project_id)
 
-        # 팀원별 최신 레코드만 추출
         seen = set()
         members = []
-        for item in items:
-            gid = item.get("github_id", "")
+        for log in reversed(logs):
+            gid = log.get("github_id", "")
             if gid in seen:
                 continue
             seen.add(gid)
-
-            estimate = float(item.get("activity_estimate", 0))
             members.append({
-                "name": item.get("member_name", ""),
+                "name": log.get("member_name", ""),
                 "github_id": gid,
-                "activity_estimate": estimate,
-                "activity_status": item.get("activity_status", "정상"),
-                "notion_completed": int(item.get("notion_completed", 0)),
-                "git_commits": int(item.get("git_commits", 0)),
-                "deadline_met": item.get("deadline_met", True),
-                "last_updated": item.get("timestamp_member", "").split("#")[0],
+                "activity_estimate": log.get("activity_estimate", 0),
+                "activity_status": log.get("activity_status", "정상"),
+                "notion_completed": log.get("notion_completed", 0),
+                "git_commits": log.get("git_commits", 0),
+                "deadline_met": log.get("deadline_met", True),
+                "last_updated": log.get("timestamp", ""),
             })
 
         return {"project_id": project_id, "members": members}

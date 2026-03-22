@@ -10,130 +10,27 @@ provider:
     NOTION_PARENT_PAGE_ID: ${env:NOTION_PARENT_PAGE_ID}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN}
     SES_SENDER_EMAIL: ${env:SES_SENDER_EMAIL}
-    ACTIVITY_LOGS_TABLE: activity_logs
-    AVAILABILITY_TABLE: availability
-    CONVERSATIONS_TABLE: conversations
-    PROJECTS_TABLE: projects
   iam:
     role:
       statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:PutItem
-            - dynamodb:GetItem
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:DeleteItem
-          Resource:
-            - arn:aws:dynamodb:us-east-1:*:table/activity_logs
-            - arn:aws:dynamodb:us-east-1:*:table/availability
-            - arn:aws:dynamodb:us-east-1:*:table/conversations
-            - arn:aws:dynamodb:us-east-1:*:table/projects
         - Effect: Allow
           Action:
             - ses:SendEmail
           Resource: "*"
 
 functions:
-  # --- 백엔드 A 담당 (placeholder) ---
-  # chatAgent:
-  #   handler: app.handlers.chat_handler
-  #   events:
-  #     - httpApi:
-  #         path: /chat
-  #         method: post
+  # 메인 API (Lambda 함수 URL로 모든 HTTP 요청 처리)
+  api:
+    handler: app.handlers.handler
+    timeout: 60
+    url: true  # Lambda 함수 URL 활성화
 
-  # --- 백엔드 B 담당 ---
+  # Tracker (수동 실행 / 테스트용)
   trackerAgent:
     handler: app.handlers.tracker_handler
     timeout: 120
-    events:
-      - schedule: rate(1 hour)
 
+  # Reminder (수동 실행 / 테스트용)
   reminderService:
     handler: app.handlers.reminder_handler
     timeout: 60
-    events:
-      - schedule: rate(1 hour)
-
-  dashboardApi:
-    handler: app.handlers.dashboard_handler
-    events:
-      - httpApi:
-          path: /dashboard/activity/{project_id}
-          method: get
-
-  availabilityApi:
-    handler: app.handlers.availability_handler
-    events:
-      - httpApi:
-          path: /availability
-          method: post
-      - httpApi:
-          path: /availability/{project_id}
-          method: get
-
-  warningApi:
-    handler: app.handlers.warning_handler
-    events:
-      - httpApi:
-          path: /send-warning
-          method: post
-
-resources:
-  Resources:
-    ActivityLogsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: activity_logs
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: project_id
-            AttributeType: S
-          - AttributeName: timestamp_member
-            AttributeType: S
-        KeySchema:
-          - AttributeName: project_id
-            KeyType: HASH
-          - AttributeName: timestamp_member
-            KeyType: RANGE
-
-    AvailabilityTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: availability
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: project_id
-            AttributeType: S
-          - AttributeName: member_day_time
-            AttributeType: S
-        KeySchema:
-          - AttributeName: project_id
-            KeyType: HASH
-          - AttributeName: member_day_time
-            KeyType: RANGE
-
-    ConversationsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: conversations
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: conversation_id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: conversation_id
-            KeyType: HASH
-
-    ProjectsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: projects
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: project_id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: project_id
-            KeyType: HASH
