@@ -5,7 +5,7 @@ provider:
   runtime: python3.12
   region: us-east-1
   environment:
-    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
     NOTION_API_KEY: ${env:NOTION_API_KEY}
     NOTION_PARENT_PAGE_ID: ${env:NOTION_PARENT_PAGE_ID}
     GITHUB_TOKEN: ${env:GITHUB_TOKEN}

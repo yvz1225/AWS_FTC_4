@@ -9,8 +9,13 @@ from app.services.reminder import run_reminder
 
 logger = logging.getLogger(__name__)
 
-# API Gateway → FastAPI (Dashboard, Availability, Warning)
+# Lambda Function URL → FastAPI (모든 HTTP 요청 처리)
 api_handler = Mangum(app, lifespan="off")
+
+
+def handler(event, context):
+    """Lambda Function URL 단일 핸들러 (모든 HTTP 요청)"""
+    return api_handler(event, context)
 
 
 def chat_handler(event, context):

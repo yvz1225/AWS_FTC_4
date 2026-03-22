@@ -1,14 +1,14 @@
-"""Chat_Agent: Gemini 기반 채팅형 명세 생성"""
+"""Chat_Agent: GPT 기반 채팅형 명세 생성"""
 import json
 import uuid
 import logging
 import boto3
 from datetime import datetime, timezone, timedelta
 
-from google import genai
+from openai import OpenAI
 
 from app.config import (
-    GEMINI_API_KEY, AWS_REGION, CONVERSATIONS_TABLE,
+    OPENAI_API_KEY, AWS_REGION, CONVERSATIONS_TABLE,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,18 +68,15 @@ def save_conversation(conversation_id: str, history: list, spec_draft: dict | No
 
 
 def extract_spec_from_response(text: str) -> dict | None:
-    """Gemini 응답에서 JSON Project_Spec 추출"""
+    """GPT 응답에서 JSON Project_Spec 추출"""
     try:
-        # ```json ... ``` 블록 찾기
         if "```json" in text:
             start = text.index("```json") + 7
             end = text.index("```", start)
             json_str = text[start:end].strip()
             return json.loads(json_str)
-        # { 로 시작하는 JSON 찾기
         elif "{" in text:
             start = text.index("{")
-            # 마지막 } 찾기
             depth = 0
             for i in range(start, len(text)):
                 if text[i] == "{":
@@ -96,48 +93,36 @@ def extract_spec_from_response(text: str) -> dict | None:
 
 def chat(conversation_id: str | None, message: str) -> dict:
     """채팅 메시지 처리"""
-    # 새 대화 시작
     if not conversation_id:
         conversation_id = str(uuid.uuid4())
 
-    # 기존 대화 이력 조회
     conv = get_conversation(conversation_id)
     history = conv.get("history", []) if conv else []
 
-    # Gemini API 호출
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        client = OpenAI(api_key=OPENAI_API_KEY)
 
-        # 대화 이력 구성
-        contents = [{"role": "user", "parts": [{"text": SYSTEM_PROMPT}]}]
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         for h in history:
-            contents.append({
-                "role": h["role"],
-                "parts": [{"text": h["text"]}],
-            })
-        contents.append({
-            "role": "user",
-            "parts": [{"text": message}],
-        })
+            role = "assistant" if h["role"] == "assistant" else "user"
+            messages.append({"role": role, "content": h["text"]})
+        messages.append({"role": "user", "content": message})
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=contents,
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
         )
-        reply = response.text
+        reply = response.choices[0].message.content
 
     except Exception as e:
-        logger.error(f"Gemini API 호출 실패: {e}")
+        logger.error(f"OpenAI API 호출 실패: {e}")
         raise
 
-    # 응답에서 spec_draft 추출
     spec_draft = extract_spec_from_response(reply)
 
-    # 대화 이력 업데이트
     history.append({"role": "user", "text": message})
-    history.append({"role": "model", "text": reply})
+    history.append({"role": "assistant", "text": reply})
 
-    # DynamoDB에 저장
     save_conversation(conversation_id, history, spec_draft)
 
     return {
