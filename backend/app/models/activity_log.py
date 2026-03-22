@@ -11,16 +11,18 @@ class ActivityLog(BaseModel):
     role: str
     git_commits: int = 0
     notion_completed: int = 0
+    notion_total: int = 0
     deadline_met: bool = True
     activity_estimate: float = 0.0
     activity_status: str = "정상"  # 낮음 / 주의 / 정상
     timestamp: str = ""
 
     def calculate_estimate(self) -> float:
-        """Activity_Estimate = Notion * 0.5 + Git * 0.5"""
-        self.activity_estimate = round(
-            self.notion_completed * 0.5 + self.git_commits * 0.5, 2
-        )
+        """Activity_Estimate = Notion task 완료 비율 (0~10 스케일)"""
+        if self.notion_total > 0:
+            self.activity_estimate = round((self.notion_completed / self.notion_total) * 10, 2)
+        else:
+            self.activity_estimate = 0.0
         return self.activity_estimate
 
     def determine_status(self, avg_estimate: float) -> str:

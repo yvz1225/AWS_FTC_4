@@ -130,6 +130,7 @@ def run_tracker():
         for member in members:
             notion_db_id = member.get("notion_db_id", "")
             notion_completed = fetch_notion_completed(notion_db_id)
+            notion_total = fetch_notion_total(notion_db_id)
             git_commits = fetch_git_commits(repo_url, member["github_id"])
 
             log = ActivityLog(
@@ -139,6 +140,7 @@ def run_tracker():
                 role=member["role"],
                 git_commits=git_commits,
                 notion_completed=notion_completed,
+                notion_total=notion_total,
                 deadline_met=True,
             )
             log.calculate_estimate()
